@@ -1,0 +1,212 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management System</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    
+    <style>
+        /* Google Fonts (CDN) */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        .main-content { transition: margin-left 0.3s ease-in-out; }
+        @media (max-width: 768px) {
+            .sidebar-closed { transform: translateX(-100%); }
+            .main-content-expanded { margin-left: 0 !important; }
+        }
+        /* Style for Select2 to match our theme */
+        .select2-container .select2-selection--single { height: 38px !important; border-radius: 0.375rem !important; border: 1px solid #d1d5db !important; }
+        .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 36px !important; }
+        .select2-container--default .select2-selection--single .select2-selection__arrow { height: 36px !important; }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <script src="{% static 'js/main.js' %}" defer></script>
+</head>
+<body class="bg-gray-100">
+    <div id="app-container" class="relative md:flex">
+        
+        <div id="sidebar" class="sidebar fixed top-0 left-0 h-full w-64 bg-gray-800 text-white z-40 md:relative md:transform-none flex flex-col">
+            <div class="p-4">
+                <h1 class="text-2xl font-bold mb-2">Inventory System</h1>
+                {% if user.is_authenticated %}
+                <p class="text-sm text-gray-400 mb-6">Logged in as: <span id="user-role-display" class="font-bold">{{ user.username }} ({{user.role}})</span></p>
+                {% endif %}
+            </div>
+            
+			
+			<nav class="flex-1 px-4 pb-4 overflow-y-auto">
+				<ul>
+					<li class="mb-2">
+						<a href="{% url 'dashboard' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-tachometer-alt fa-fw mr-3"></i>Dashboard
+						</a>
+					</li>
+					<li class="mb-2">
+						<a href="{% url 'inward' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-arrow-down fa-fw mr-3"></i>Inward
+						</a>
+					</li>
+					<li class="mb-2">
+						<a href="{% url 'outward' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-arrow-up fa-fw mr-3"></i>Outward
+						</a>
+					</li>
+					<!--<li class="mb-2">
+						<a href="{% url 'production' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-industry fa-fw mr-3"></i>Production
+						</a>
+					</li>-->
+					<li class="mb-2">
+						<a href="{% url 'warehouse_transfer' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-exchange-alt fa-fw mr-3"></i>Warehouse Transfer
+						</a>
+					</li>	
+					<li class="mb-2">
+						<a href="{% url 'stock_adjustment' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-sliders-h fa-fw mr-3"></i>Stock Adjustment
+						</a>
+					</li>
+					<li class="mb-2">
+						<button type="button" class="submenu-toggle flex items-center w-full p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-file-invoice fa-fw mr-3"></i>
+							<span class="flex-1 text-left whitespace-nowrap">Delivery Note</span>
+							<i class="fas fa-chevron-down ml-auto transition-transform duration-300"></i>
+						</button>
+						<ul class="submenu hidden py-1 space-y-1">
+							<li><a href="{% url 'delivery_out' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Material Out</a></li>
+							<li><a href="{% url 'delivery_in' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Material In</a></li>
+						</ul>
+					</li>		
+
+					
+					<li class="mb-2">
+								<button type="button" class="submenu-toggle flex items-center w-full p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+									<i class="fas fa-chart-bar fa-fw mr-3"></i>
+									<span class="flex-1 text-left whitespace-nowrap">Reports</span>
+									<i class="fas fa-chevron-down ml-auto transition-transform duration-300"></i>
+								</button>
+								<ul class="submenu hidden py-1 space-y-1">
+									<li><a href="{% url 'stock_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Stock Summary</a></li>
+									<li><a href="{% url 'pending_delivery_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Pending Deliveries</a></li>
+									<li><a href="{% url 'inward_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Inward Report</a></li>
+									<li><a href="{% url 'outward_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Outward Report</a></li>
+									
+									<!--<li><a href="{% url 'production_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Production Report</a></li>-->
+									
+									<li><a href="{% url 'warehouse_transfer_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Warehouse Transfer Report</a></li>
+									<li><a href="{% url 'delivery_note_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Delivery Note Report</a></li>
+									<li><a href="{% url 'stock_adjustment_report' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Adjustment Report</a></li>
+								</ul>
+					</li>
+
+					<li class="mb-2">
+						<button type="button" class="submenu-toggle flex items-center w-full p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-database fa-fw mr-3"></i>
+							<span class="flex-1 text-left whitespace-nowrap">Masters</span>
+							<i class="fas fa-chevron-down ml-auto transition-transform duration-300"></i>
+						</button>
+						<ul class="submenu hidden py-1 space-y-1">
+							<li>
+								<a href="{% url 'item_master' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Item Master</a>
+							</li>
+							<li>
+								<a href="{% url 'group_master' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Group Master</a>
+							</li>
+							 <li>
+								<a href="{% url 'warehouse_master' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Warehouse Master</a>
+							</li>
+							 <li>
+								<a href="{% url 'contact_master' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Supplier/Customer</a>
+							</li>
+							
+							<li>
+								<a href="{% url 'opening_stock' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Opening Stock</a>
+							</li>
+						</ul>
+					</li>
+					<li class="mb-2">
+						<button type="button" class="submenu-toggle flex items-center w-full p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-cog fa-fw mr-3"></i>
+							<span class="flex-1 text-left whitespace-nowrap">Settings</span>
+							<i class="fas fa-chevron-down ml-auto transition-transform duration-300"></i>
+						</button>
+						<ul class="submenu hidden py-1 space-y-1">
+							
+							<!--<li><a href="{% url 'bom_create' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Bill of Materials</a></li>-->
+							
+							<li><a href="{% url 'period_setting' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Period Settings</a></li>
+							<li><a href="{% url 'password_change' %}" class="flex items-center w-full p-2 pl-11 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">Change Password</a></li>
+						</ul>
+					</li>
+				</ul>
+			</nav> 
+			<nav>
+				<ul>
+					{% if user.role == 'admin' %}
+					<li class="mb-2">
+						<button type="button" class="submenu-toggle flex items-center w-full p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-users-cog fa-fw mr-3"></i>
+							<span class="flex-1 text-left whitespace-nowrap">Management</span>
+							<i class="fas fa-chevron-down ml-auto transition-transform duration-300"></i>
+						</button>
+						<ul class="submenu hidden py-1 space-y-1">
+							<li><a href="{% url 'user_list' %}" class="flex items-center w-full p-2 pl-11 ...">User Management</a></li>
+						</ul>
+					</li>
+					{% endif %}
+
+				</ul>
+			</nav>			
+			<nav>
+				<ul>
+					<li class="mb-2">
+						<a href="{% url 'import_page' %}" class="nav-link flex items-center p-2 text-base font-normal text-gray-300 rounded-lg hover:bg-gray-700">
+							<i class="fas fa-file-export fa-fw mr-3"></i>Import Data
+						</a>
+					</li>
+					
+					</ul>
+				
+			</nav>			
+
+            <div class="p-4 space-y-2">
+                
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full flex items-center justify-center p-2 text-base font-normal text-white bg-red-600 rounded-lg hover:bg-red-700">
+                        <i class="fas fa-sign-out-alt mr-3"></i>Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="main-content" class="main-content md:ml-64 flex-1 p-4 md:p-8">
+            <button id="sidebar-toggle" class="md:hidden mb-4 p-2 bg-gray-800 text-white rounded-lg">
+                <i class="fas fa-bars"></i>
+            </button>
+            
+            {% block content %}{% endblock %}
+        </div>
+        
+    </div>
+</body>
+</html>

@@ -1,0 +1,112 @@
+{% extends "inventory/base.html" %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-6">Item-Wise Stock Report</h2>
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <form method="get" class="space-y-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 items-end">
+            <div>
+                <label for="warehouse_filter" class="block font-medium text-sm">Warehouse</label>
+                <select name="warehouse_filter" id="warehouse_filter" class="mt-1 block w-full border-gray-300 rounded-md">
+                    <option value="">All</option>
+                    {% for wh in all_warehouses %}<option value="{{ wh.pk }}" {% if wh.pk == warehouse_filter %}selected{% endif %}>{{ wh.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="group_filter" class="block font-medium text-sm">Item Group</label>
+                <select name="group_filter" id="group_filter" class="mt-1 block w-full border-gray-300 rounded-md">
+                    <option value="">All</option>
+                    {% for group in all_groups %}<option value="{{ group.pk }}" {% if group.pk == group_filter %}selected{% endif %}>{{ group.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-span-2 md:col-span-1 lg:col-span-2">
+                <label for="item_filter" class="block font-medium text-sm">Specific Item</label>
+                <select name="item_filter" id="item_filter" class="mt-1 block w-full border-gray-300 rounded-md">
+                    <option value="">All</option>
+                    {% for item in all_items %}<option value="{{ item.pk }}" {% if item.pk == item_filter %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="sort_by" class="block font-medium text-sm">Sort By</label>
+                <select name="sort_by" id="sort_by" class="mt-1 block w-full border-gray-300 rounded-md">
+                    <option value="item_name" {% if sort_by == 'item_name' %}selected{% endif %}>Item Name</option>
+                    <option value="item_group" {% if sort_by == 'item_group' %}selected{% endif %}>Item Group</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex flex-wrap justify-between items-end gap-4 mt-4">
+            <div class="flex items-center">
+                <label class="inline-flex items-center"><input type="checkbox" name="hide_zero" value="on" {% if hide_zero %}checked{% endif %} class="rounded"><span class="ml-2 text-sm">Hide Zero Stock</span></label>
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="per_page" class="text-sm">Show:</label>
+                <select name="per_page" id="per_page" class="border-gray-300 rounded-md text-sm">
+                    <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                    <option value="20" {% if per_page == '20' %}selected{% endif %}>20</option>
+                    <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+                </select>
+                <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Generate</button>
+                <a href="{% url 'stock_report' %}" class="bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-lg">Clear</a>
+            </div>
+            <div>
+                <a href="?{{ request.GET.urlencode }}&export=csv" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700"><i class="fas fa-file-excel mr-2"></i>Export</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+    <table class="min-w-full bg-white text-sm">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="py-2 px-3 border-b text-left">Item Name</th><th class="py-2 px-3 border-b text-left">Item Code</th><th class="py-2 px-3 border-b text-left">Group</th>
+                {% for wh in warehouses %}<th class="py-2 px-3 border-b text-right">{{ wh.name }}</th>{% endfor %}
+                <th class="py-2 px-3 border-b text-right font-bold bg-gray-200">Total Stock</th><th class="py-2 px-3 border-b text-right font-bold bg-yellow-100">Pending Return</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in report_page %}
+            <tr class="hover:bg-gray-50">
+                <td class="py-2 px-3 border-b">{{ row.item_name }}</td>
+                <td class="py-2 px-3 border-b">{{ row.item_code|default:"-" }}</td>
+                <td class="py-2 px-3 border-b">{{ row.item_group }}</td>
+                {% for qty in row.stock_by_warehouse %}<td class="py-2 px-3 border-b text-right {% if qty < 0 %}text-red-600{% endif %}">{{ qty|floatformat:2 }}</td>{% endfor %}
+                <td class="py-2 px-3 border-b text-right font-bold bg-gray-50">{{ row.total_stock|floatformat:2 }}</td>
+                <td class="py-2 px-3 border-b text-right font-bold bg-yellow-50">{{ row.pending|floatformat:2 }}</td>
+            </tr>
+            {% empty %}<tr><td colspan="{{ warehouses|length|add:5 }}" class="py-4 px-4 text-center text-gray-500">No stock data found.</td></tr>
+            {% endfor %}
+        </tbody>
+        <tfoot class="bg-gray-200 font-bold">
+            <tr>
+                <td class="py-3 px-3 border-b text-left" colspan="3">Grand Total</td>
+                {% for total in column_totals %}<td class="py-3 px-3 border-b text-right">{{ total|floatformat:2 }}</td>{% endfor %}
+                <td class="py-3 px-3 border-b text-right">{{ grand_total_stock|floatformat:2 }}</td>
+                <td class="py-3 px-3 border-b text-right">{{ grand_total_pending|floatformat:2 }}</td>
+            </tr>
+        </tfoot>
+    </table>
+	    <div class="mt-4 flex justify-between items-center">
+        <span class="text-sm text-gray-700">
+            Showing page {{ report_page.number }} of {{ report_page.paginator.num_pages }}.
+        </span>
+        <div class="flex space-x-2">
+            {% if report_page.has_previous %}
+                <a href="?page={{ report_page.previous_page_number }}&{{ request.GET.urlencode | cut:'page=' }}" class="px-3 py-1 border rounded-md text-sm">Previous</a>
+            {% endif %}
+            {% if report_page.has_next %}
+                <a href="?page={{ report_page.next_page_number }}&{{ request.GET.urlencode | cut:'page=' }}" class="px-3 py-1 border rounded-md text-sm">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+<script>
+$(document).ready(function() {
+    $('#warehouse_filter').select2({ theme: "classic", width: 'style', placeholder: 'Select Warehouse'});
+    $('#group_filter').select2({ theme: "classic", width: 'style', placeholder: 'Select Group'});
+    $('#item_filter').select2({ theme: "classic", width: 'style', placeholder: 'Select Item'});
+});
+</script>
+{% endblock %}

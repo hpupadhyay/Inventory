@@ -1,0 +1,319 @@
+{% extends "inventory/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-6">Item Master</h2>
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h3 class="text-xl font-bold mb-4">Add New Item</h3>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {{ form|crispy }}
+        </div>
+
+        <h4 class="text-lg font-semibold mt-4">Aliases</h4>
+        <div id="alias-formset-container" class="space-y-4">
+            {{ alias_formset.management_form }}
+            {% for alias_form in alias_formset %}
+            <div class="alias-form grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                {{ alias_form|crispy }}
+                {% if alias_form.instance.pk %}
+                <div class="md:col-span-1 flex items-center">
+                    <label for="{{ alias_form.DELETE.id_for_label }}" class="flex items-center text-red-600">
+                        {{ alias_form.DELETE }}
+                        <span class="ml-2">Delete</span>
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="add-alias-form" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Add Another Alias</button>
+
+        <h4 class="text-lg font-semibold mt-4">Part Number Aliases</h4>
+        <div id="part-number-alias-formset-container" class="space-y-4">
+            {{ part_number_formset.management_form }}
+            {% for pn_form in part_number_formset %}
+            <div class="part-number-alias-form grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                {{ pn_form|crispy }}
+                {% if pn_form.instance.pk %}
+                <div class="md:col-span-1 flex items-center">
+                    <label for="{{ pn_form.DELETE.id_for_label }}" class="flex items-center text-red-600">
+                        {{ pn_form.DELETE }}
+                        <span class="ml-2">Delete</span>
+                    </label>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="add-part-number-alias-form" class="bg-gray-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-600">Add Another Part Number Alias</button>
+
+        <div class="flex justify-end mt-4">
+            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Add Item</button>
+        </div>
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h3 class="text-xl font-bold mb-4">Look up Item by Barcode</h3>
+    <div class="flex items-end gap-4">
+        <div>
+            <label for="barcode_lookup" class="block font-medium">Barcode</label>
+            <input type="text" id="barcode_lookup" name="barcode" placeholder="Scan or enter barcode" class="mt-1 border-gray-300 rounded-md">
+        </div>
+        <button type="button" id="barcode-lookup-btn" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Look Up</button>
+    </div>
+    <div id="barcode-lookup-results" class="mt-4 p-4 border rounded-md hidden">
+        <p><strong>Item:</strong> <span id="result-item-name"></span></p>
+        <p><strong>Code:</strong> <span id="result-item-code"></span></p>
+        <p><strong>Item ID:</strong> <span id="result-item-id"></span></p>
+    </div>
+    <div id="barcode-lookup-error" class="mt-4 p-4 text-sm text-red-700 bg-red-100 rounded-lg hidden"></div>
+</div>
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <form method="get" class="flex flex-wrap items-end gap-4">
+        <div>
+            <label for="search_query" class="block font-medium">Search</label>
+            <input type="text" name="search_query" id="search_query" value="{{ search_query|default:'' }}" class="mt-1 border-gray-300 rounded-md">
+        </div>
+        <div>
+            <label for="group_filter" class="block font-medium">Group</label>
+            <select name="group_filter" id="group_filter" class="mt-1 border-gray-300 rounded-md">
+                <option value="">All Groups</option>
+                {% for group in groups %}
+                <option value="{{ group.pk }}" {% if group.pk == group_filter %}selected{% endif %}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="per_page" class="block font-medium">Show</label>
+            <select name="per_page" id="per_page" class="mt-1 border-gray-300 rounded-md">
+                <option value="10" {% if per_page == '10' %}selected{% endif %}>10</option>
+                <option value="20" {% if per_page == '20' %}selected{% endif %}>20</option>
+                <option value="50" {% if per_page == '50' %}selected{% endif %}>50</option>
+            </select>
+        </div>
+        <button type="submit" class="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Search</button>
+    </form>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+    <table class="min-w-full bg-white">
+        <thead class="bg-gray-100">
+            <tr>
+                <th class="py-2 px-4 border-b text-left">Item Name</th>
+                <th class="py-2 px-4 border-b text-left">Item Code</th>
+                <th class="py-2 px-4 border-b text-left">Aliases</th>
+                <th class="py-2 px-4 border-b text-left">Part Number Aliases</th>
+                <th class="py-2 px-4 border-b text-left">Group</th>
+                <th class="py-2 px-4 border-b text-left">Unit</th>
+                <th class="py-2 px-4 border-b text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr class="hover:bg-gray-50">
+                <td class="py-2 px-4 border-b">{{ item.name }}</td>
+                <td class="py-2 px-4 border-b">{{ item.code|default:"N/A" }}</td>
+                <td class="py-2 px-4 border-b">
+                    {% for alias in item.aliases.all %}
+                        <span class="inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">{{ alias.alias_name }}</span>
+                    {% empty %}
+                        N/A
+                    {% endfor %}
+                </td>
+                <td class="py-2 px-4 border-b">
+                    {% for pn_alias in item.part_number_aliases.all %}
+                        <span class="inline-block bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">{{ pn_alias.alias_part_number }}</span>
+                    {% empty %}
+                        N/A
+                    {% endfor %}
+                </td>
+                <td class="py-2 px-4 border-b">{{ item.group.name }}</td>
+                <td class="py-2 px-4 border-b">{{ item.unit }}</td>
+                <td class="py-2 px-4 border-b whitespace-nowrap">
+                    <a href="{% url 'item_edit' item.pk %}" class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></a>
+                    <a href="{% url 'item_delete' item.pk %}" class="text-red-600 hover:text-red-800"><i class="fas fa-trash-alt"></i></a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="py-4 text-center text-gray-500">No items found matching your criteria.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="mt-4 flex justify-between items-center">
+        <span class="text-sm text-gray-700">
+            Page {{ items.number }} of {{ items.paginator.num_pages }}.
+        </span>
+        <div class="flex space-x-2">
+            {% if items.has_previous %}
+                <a href="?page=1&search_query={{ search_query }}&group_filter={{ group_filter }}&per_page={{ per_page }}" class="px-3 py-1 border rounded-md text-sm">&laquo; First</a>
+                <a href="?page={{ items.previous_page_number }}&search_query={{ search_query }}&group_filter={{ group_filter }}&per_page={{ per_page }}" class="px-3 py-1 border rounded-md text-sm">Previous</a>
+            {% endif %}
+            {% if items.has_next %}
+                <a href="?page={{ items.next_page_number }}&search_query={{ search_query }}&group_filter={{ group_filter }}&per_page={{ per_page }}" class="px-3 py-1 border rounded-md text-sm">Next</a>
+                <a href="?page={{ items.paginator.num_pages }}&search_query={{ search_query }}&group_filter={{ group_filter }}&per_page={{ per_page }}" class="px-3 py-1 border rounded-md text-sm">Last &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+<template id="empty_alias_form">
+    <div class="alias-form grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        {{ alias_formset.empty_form|crispy }}
+    </div>
+</template>
+
+<template id="empty_pn_alias_form">
+    <div class="part-number-alias-form grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+        {{ part_number_formset.empty_form|crispy }}
+    </div>
+</template>
+
+<script>
+    function updateElementIndex(el, prefix, ndx) {
+        var id_regex = new RegExp('(' + prefix + '-\\d+)');
+        var replacement = prefix + '-' + ndx;
+        if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
+        if (el.id) el.id = el.id.replace(id_regex, replacement);
+        if (el.name) el.name = el.name.replace(id_regex, replacement);
+    }
+
+    $(document).ready(function() {
+        const importModal = $('#import-modal');
+        const importForm = $('#import-csv-form');
+        const messageDiv = $('#import-messages');
+
+        // Open and close the modal
+        $('#open-import-modal').click(() => importModal.removeClass('hidden').addClass('flex'));
+        $('#close-import-modal').click(() => importModal.addClass('hidden').removeClass('flex'));
+
+        // Handle AJAX form submission for import
+        importForm.on('submit', async function(e) {
+            e.preventDefault();
+            messageDiv.html('<p class="text-blue-600">Processing...</p>');
+
+            const formData = new FormData(this);
+            const response = await fetch("{% url 'item_master' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const data = await response.json();
+
+            // Display the message from the server
+            let messageClass = data.status === 'complete' || data.status === 'success' ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100';
+            messageDiv.html(`<div class="p-4 rounded-lg ${messageClass}">${data.message}</div>`);
+
+            // If the server sent back any report data, trigger a download
+            if (data.report_data) {
+                const blob = new Blob([data.report_data], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = data.filename || 'import_summary.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            }
+
+            // Reload the page after the import is complete to show the new data
+            if (data.status === 'complete' || data.status === 'success') {
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        });
+
+        // Add logic for dynamically adding new alias forms
+        const aliasContainer = document.querySelector('#alias-formset-container');
+        const aliasButton = document.querySelector('#add-alias-form');
+        const emptyAliasFormTemplate = document.querySelector('#empty_alias_form');
+
+        aliasButton.addEventListener('click', () => {
+            const totalForms = document.querySelector('#id_aliases-TOTAL_FORMS');
+            const newForm = emptyAliasFormTemplate.innerHTML.replace(/__prefix__/g, totalForms.value);
+            aliasContainer.insertAdjacentHTML('beforeend', newForm);
+            totalForms.value = parseInt(totalForms.value) + 1;
+        });
+
+        // Add logic for dynamically adding new part number alias forms
+        const pnAliasContainer = document.querySelector('#part-number-alias-formset-container');
+        const pnAliasButton = document.querySelector('#add-part-number-alias-form');
+        const emptyPnAliasFormTemplate = document.querySelector('#empty_pn_alias_form');
+
+        pnAliasButton.addEventListener('click', () => {
+            const totalForms = document.querySelector('#id_part_numbers-TOTAL_FORMS');
+            const newForm = emptyPnAliasFormTemplate.innerHTML.replace(/__prefix__/g, totalForms.value);
+            pnAliasContainer.insertAdjacentHTML('beforeend', newForm);
+            totalForms.value = parseInt(totalForms.value) + 1;
+        });
+
+        // NEW BARCODE LOOKUP JAVASCRIPT
+        $('#barcode-lookup-btn').on('click', async function() {
+            const barcode = $('#barcode_lookup').val();
+            const resultsDiv = $('#barcode-lookup-results');
+            const errorDiv = $('#barcode-lookup-error');
+            
+            // Clear previous results
+            resultsDiv.addClass('hidden');
+            errorDiv.addClass('hidden').empty();
+
+            if (!barcode) {
+                errorDiv.text('Please enter a barcode.').removeClass('hidden');
+                return;
+            }
+
+            try {
+                const response = await fetch(`{% url 'get_item_by_barcode' %}?barcode=${barcode}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    $('#result-item-name').text(data.item_name);
+                    $('#result-item-code').text(data.item_code);
+                    $('#result-item-id').text(data.item_id);
+                    resultsDiv.removeClass('hidden');
+                } else {
+                    errorDiv.text(data.error || 'An unknown error occurred.').removeClass('hidden');
+                }
+            } catch (error) {
+                console.error('Error fetching barcode data:', error);
+                errorDiv.text('Failed to connect to the server.').removeClass('hidden');
+            }
+        });
+
+        // Handle toast messages for other actions (like manual add)
+        {% if messages %}
+        {% for message in messages %}
+        Toastify({ text: "{{ message }}", duration: 3000, close: true, gravity: "top", position: "right", backgroundColor: "{% if message.tags == 'success' %}#4CAF50{% else %}#F44336{% endif %}", stopOnFocus: true }).showToast();
+        {% endfor %}
+        {% endif %}
+    });
+</script>
+<script>
+    {% if messages %}
+    {% for message in messages %}
+    Toastify({
+        text: "{{ message }}",
+        duration: 3000,
+        close: true,
+        gravity: "top", // `top` or `bottom`
+        position: "right", // `left`, `center` or `right`
+        backgroundColor: "{% if message.tags == 'success' %}#4CAF50{% else %}#F44336{% endif %}", // Green for success, Red for error
+        stopOnFocus: true
+    }).showToast();
+    {% endfor %}
+    {% endif %}
+</script>
+
+{% endblock %}

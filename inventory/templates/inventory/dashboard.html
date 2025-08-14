@@ -1,0 +1,120 @@
+{% extends "inventory/base.html" %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-6">Dashboard</h2>
+<div class="flex justify-between items-center mb-6">
+        Active Period: {{ active_period_start|date:"d M, Y" }} to {{ active_period_end|date:"d M, Y" }}
+</div>
+<div class="bg-white p-4 rounded-lg shadow-md mb-8">
+    <form method="get" class="flex flex-wrap items-end gap-4">
+        <div>
+            <label for="warehouse_filter" class="block font-medium text-sm text-gray-700">Warehouse</label>
+            <select name="warehouse_filter" id="warehouse_filter" class="mt-1 border-gray-300 rounded-md shadow-sm">
+                <option value="">All Warehouses</option>
+                {% for wh in warehouses %}
+                <option value="{{ wh.pk }}" {% if wh.pk == warehouse_filter %}selected{% endif %}>{{ wh.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="group_filter" class="block font-medium text-sm text-gray-700">Item Group</label>
+            <select name="group_filter" id="group_filter" class="mt-1 border-gray-300 rounded-md shadow-sm">
+                <option value="">All Groups</option>
+                {% for group in groups %}
+                <option value="{{ group.pk }}" {% if group.pk == group_filter %}selected{% endif %}>{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Apply Filter</button>
+        <a href="{% url 'dashboard' %}" class="text-gray-600 hover:text-blue-600 text-sm py-2 px-4">Clear Filter</a>
+    </form>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    </div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    </div>
+
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-gray-600">Total Unique Items</h3>
+        <p class="text-3xl font-bold mt-2">{{ total_items_count }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-gray-600">Total Stock Quantity</h3>
+        <p class="text-3xl font-bold mt-2">{{ total_stock_quantity|floatformat:2 }}</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-semibold text-gray-600">Low Stock Items</h3>
+        <p class="text-3xl font-bold mt-2 text-red-500">{{ low_stock_items_count }}</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+	<div class="lg:col-span-2 bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-xl font-bold mb-4">Top 5 Items by Stock</h3>
+        <div class="relative h-96">
+            <canvas id="stockChart"></canvas>
+        </div>
+    </div>
+
+    <div class="space-y-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-bold mb-4">Highest Stock Items</h3>
+            <ul class="space-y-2">
+                {% for stock in top_items %}
+                <li class="flex justify-between items-center text-sm">
+                    <span>{{ stock.item.name }}</span>
+                    <span class="font-bold bg-blue-100 text-blue-800 px-2 py-1 rounded-full">{{ stock.quantity|floatformat:0 }}</span>
+                </li>
+                {% empty %}
+                <li>No stock data available.</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-bold mb-4">Low Stock Warning</h3>
+            <ul class="space-y-2">
+                {% for stock in low_stock_items %}
+                <li class="flex justify-between items-center text-sm">
+                    <span>{{ stock.item.name }}</span>
+                    <span class="font-bold bg-red-100 text-red-800 px-2 py-1 rounded-full">{{ stock.quantity|floatformat:0 }}</span>
+                </li>
+                {% empty %}
+                <li>No items are low on stock.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const ctx = document.getElementById('stockChart').getContext('2d');
+    const stockChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Quantity in Stock',
+                data: {{ chart_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+});
+</script>
+{% endblock %}

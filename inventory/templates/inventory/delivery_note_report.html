@@ -1,0 +1,113 @@
+{% extends "inventory/base.html" %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-6">Delivery Note Report</h2>
+
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <div class="flex justify-between items-end">
+        <form method="get" class="flex items-end space-x-4">
+            <div><label class="block font-medium">From Date</label><input type="date" name="start_date" value="{{ start_date|default:'' }}" class="mt-1 block w-full border-gray-300 rounded-md"></div>
+            <div><label class="block font-medium">To Date</label><input type="date" name="end_date" value="{{ end_date|default:'' }}" class="mt-1 block w-full border-gray-300 rounded-md"></div>
+            <div>
+                <label class="block font-medium">Type</label>
+                <select name="type_filter" class="mt-1 block w-full border-gray-300 rounded-md">
+                    <option value="">All</option>
+                    <option value="Material Out" {% if type_filter == 'Material Out' %}selected{% endif %}>Material Out</option>
+                    <option value="Material In" {% if type_filter == 'Material In' %}selected{% endif %}>Material In</option>
+                </select>
+            </div>
+            <div><label class="block font-medium">Show</label><select name="per_page" onchange="this.form.submit()" class="mt-1 block w-full border-gray-300 rounded-md"><option value="10" {% if per_page == '10' %}selected{% endif %}>10</option><option value="20" {% if per_page == '20' %}selected{% endif %}>20</option><option value="50" {% if per_page == '50' %}selected{% endif %}>50</option></select></div>
+            <button type="submit" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700">Filter</button>
+        </form>
+        <div><a href="?{{ request.GET.urlencode }}&export=csv" class="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700"><i class="fas fa-file-excel mr-2"></i>Export All</a></div>
+    </div>
+</div>
+
+<div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+    <table class="min-w-full bg-white text-sm">
+        <thead class="bg-gray-100">
+            <tr>
+                <th></th><th class="text-left py-2 px-3">Date</th><th class="text-left py-2 px-3">Type</th><th class="text-left py-2 px-3">Ref No. / Details</th><th class="text-left py-2 px-3">Contact</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr class="border-t hover:bg-gray-50">
+                <td class="py-2 px-3 text-center"><button class="toggle-details text-blue-500"><i class="fas fa-plus-circle"></i></button></td>
+                <td class="py-2 px-3">{{ tx.date }}</td>
+                <td class="py-2 px-3 font-semibold {% if tx.type == 'Material In' %}text-green-600{% else %}text-red-600{% endif %}">{{ tx.type }}</td>
+                <td class="py-2 px-3">{{ tx.ref_no }}</td>
+                <td class="py-2 px-3">{{ tx.contact.name|default:"-" }}</td>
+                <td class="py-2 px-3 whitespace-nowrap">
+                    {% if tx.type == 'Material Out' %}
+                        {% if tx.obj.items.all.first.deliveryinitem_set.exists %}<span class="text-gray-400 cursor-not-allowed" title="Returns exist"><i class="fas fa-edit"></i><i class="fas fa-trash-alt ml-2"></i></span>
+                        {% else %}<a href="{% url 'delivery_out_edit' tx.obj.pk %}" class="text-blue-600" title="Edit"><i class="fas fa-edit"></i></a><a href="{% url 'delivery_out_delete' tx.obj.pk %}" class="text-red-600 ml-2" title="Delete"><i class="fas fa-trash-alt"></i></a>{% endif %}
+                    {% else %} <a href="#" class="text-gray-400 cursor-not-allowed" title="Edit (Not Available)"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'delivery_in_delete' tx.obj.pk %}" class="text-red-600 ml-2" title="Delete"><i class="fas fa-trash-alt"></i></a>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr class="details-row hidden"><td colspan="6" class="p-0"><div class="p-4 bg-gray-50">
+                <h4 class="font-bold mb-2">Items:</h4>
+                <table class="min-w-full text-xs">
+                    {% if tx.type == 'Material Out' %}
+                        <thead class="bg-gray-200"><tr><th class="text-left p-2">Item</th><th class="text-left p-2">From Warehouse</th><th class="text-right p-2">Issued Qty</th><th class="text-right p-2">Returned Qty</th></tr></thead>
+                        <tbody>
+                            {% for item in tx.items %}
+                            <tr class="border-t"><td>{{ item.item.name }}</td><td>{{ item.from_warehouse.name }}</td><td class="text-right">{{ item.issued_quantity|floatformat:0 }}</td><td class="text-right">{{ item.returned_quantity|floatformat:0 }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    {% else %}
+                        <thead class="bg-gray-200"><tr><th class="text-left p-2">Item</th><th class="text-left p-2">Return to Warehouse</th><th class="text-right p-2">Returned Qty</th><th class="text-left p-2 border-l">Original Out Date</th><th class="text-left p-2">Original Out Ref No.</th></tr></thead>
+                        <tbody>
+                            {% for item in tx.items %}
+                            <tr class="border-t"><td>{{ item.original_delivery_item.item.name }}</td><td>{{ item.to_warehouse.name }}</td><td class="text-right">{{ item.returned_quantity|floatformat:0 }}</td><td class="p-2 border-l">{{ item.original_delivery_item.header.date }}</td><td class="p-2">{{ item.original_delivery_item.header.reference_no }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    {% endif %}
+                </table>
+            </tr>
+            {% empty %}<tr><td colspan="6" class="py-4 text-center text-gray-500">No transactions found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="mt-4 flex justify-between items-center">
+        <span class="text-sm text-gray-700">
+            Page {{ transactions.number }} of {{ transactions.paginator.num_pages }}.
+        </span>
+        <div class="flex space-x-2">
+            {% if transactions.has_previous %}
+                <a href="?page={{ transactions.previous_page_number }}&per_page={{ per_page }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&type_filter={{ type_filter|default:'' }}" class="px-3 py-1 border rounded-md text-sm">Previous</a>
+            {% endif %}
+            {% if transactions.has_next %}
+                <a href="?page={{ transactions.next_page_number }}&per_page={{ per_page }}&start_date={{ start_date|default:'' }}&end_date={{ end_date|default:'' }}&type_filter={{ type_filter|default:'' }}" class="px-3 py-1 border rounded-md text-sm">Next</a>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+
+<script>
+$(document).ready(function() {
+    $('.toggle-details').click(function() {
+        $(this).closest('tr').next('.details-row').toggleClass('hidden');
+        $(this).find('i').toggleClass('fa-plus-circle fa-minus-circle');
+    });
+});
+</script>
+
+<script>
+{% if messages %}
+    {% for message in messages %}
+        Toastify({
+            text: "{{ message }}",
+            duration: 3000,
+            close: true,
+            gravity: "top", // `top` or `bottom`
+            position: "right", // `left`, `center` or `right`
+            backgroundColor: "{% if message.tags == 'success' %}#4CAF50{% else %}#F44336{% endif %}", // Green for success, Red for error
+            stopOnFocus: true
+        }).showToast();
+    {% endfor %}
+{% endif %}
+</script>
+{% endblock %}

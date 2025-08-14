@@ -1,0 +1,170 @@
+{% extends "inventory/base.html" %}
+
+{% block content %}
+<h2 class="text-3xl font-bold mb-6">Import Data</h2>
+<div id="messages-container" class="mb-4"></div>
+
+<div class="space-y-4">
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Inward Transactions</summary>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+            <div>
+                <h4 class="font-bold mb-2">Import Inward Data</h4>
+                <form class="import-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_inward">
+                    <div class="space-y-2">
+                        <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                    </div>
+                </form>
+                <a href="{% url 'download_template' 'inward' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+            </div>
+        </div>
+    </details>
+
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Outward Transactions</summary>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+            <div>
+                <h4 class="font-bold mb-2">Import Outward Data</h4>
+                <form class="import-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_outward">
+                    <div class="space-y-2">
+                        <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                    </div>
+                </form>
+                <a href="{% url 'download_template' 'outward' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+            </div>
+        </div>
+    </details>
+
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Stock Adjustments</summary>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+            <div>
+                <h4 class="font-bold mb-2">Import Stock Adjustments</h4>
+                <form class="import-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_adjustment">
+                    <div class="space-y-2">
+                        <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                    </div>
+                </form>
+                <a href="{% url 'download_template' 'stock_adjustment' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+            </div>
+        </div>
+    </details>
+
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Historical Opening Stock</summary>
+        <div class="mt-4 border-t pt-4">
+            <h4 class="font-bold mb-2">Import Opening Stock Data</h4>
+            <p class="text-sm text-gray-500 mb-2">CSV format: Date (YYYY-MM-DD), Item Name, Warehouse Name, Quantity</p>
+            <form class="import-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="import_opening_stock">
+                <div class="space-y-2">
+                    <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                    <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                </div>
+            </form>
+            <a href="{% url 'download_template' 'opening_stock' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+        </div>
+    </details>
+
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Delivery Note (Material Out)</summary>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+            <div>
+                <h4 class="font-bold mb-2">Import Material Out Data</h4>
+                <form class="import-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_delivery_out">
+                    <div class="space-y-2">
+                        <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                    </div>
+                </form>
+                <a href="{% url 'download_template' 'delivery_out' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+            </div>
+        </div>
+    </details>
+
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Item Master</summary>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+            <div>
+                <h4 class="font-bold mb-2">Import Item Master Data</h4>
+                <form class="import-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_item_master">
+                    <div class="space-y-2">
+                        <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                    </div>
+                </form>
+                <a href="{% url 'download_template' 'item_master' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+            </div>
+        </div>
+    </details>
+
+    <details class="bg-white p-4 rounded-lg shadow">
+        <summary class="font-semibold text-lg cursor-pointer">Customer Master</summary>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
+            <div>
+                <h4 class="font-bold mb-2">Import Customer Data</h4>
+                <form class="import-form" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_customer">
+                    <div class="space-y-2">
+                        <div><label>Upload CSV File</label><input type="file" name="csv_file" accept=".csv" required class="w-full"></div>
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Import CSV</button>
+                    </div>
+                </form>
+                <a href="{% url 'download_template' 'customer' %}" class="text-blue-500 hover:underline text-sm mt-2 block">Download Template</a>
+            </div>
+        </div>
+    </details>
+</div>
+
+<script>
+// The AJAX import logic remains the same as it correctly handles POST requests
+$(document).ready(function() {
+    $('.import-form').on('submit', async function(e) {
+        e.preventDefault(); 
+        const messagesContainer = $('#messages-container');
+        messagesContainer.html('<p class="p-4 mb-4 text-sm rounded-lg bg-blue-100 text-blue-700">Processing your file...</p>');
+        const formData = new FormData(this);
+        const csrfToken = $(this).find('input[name="csrfmiddlewaretoken"]').val();
+        try {
+            const response = await fetch("{% url 'import_page' %}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRFToken': csrfToken }
+            });
+            const data = await response.json();
+            let messageClass = data.status === 'success' || data.status === 'complete' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+            messagesContainer.html(`<div class="p-4 mb-4 text-sm rounded-lg ${messageClass}">${data.message}</div>`);
+            if (data.report_data) {
+                const blob = new Blob([data.report_data], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = data.filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            }
+        } catch (error) {
+            messagesContainer.html(`<div class="p-4 mb-4 text-sm rounded-lg bg-red-100 text-red-700">A network error occurred. Please try again.</div>`);
+        }
+    });
+});
+</script>
+{% endblock %}
